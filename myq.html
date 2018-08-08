@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>My SuMo Questions (Beta)</title>
+<style type="text/css">
+html, body {height:100vh; padding:0; background-color:#fcfcfc;}
+body {font-family:sans-serif; font-size:16px; margin:0 8px;}
+#loadmsg {position:absolute; top:-6px; left:25%; font-size:2em; color: #080;}
+#questions {width:54%; float:left; height:calc(100vh - 41px - 18px); overflow-y:scroll; border-bottom:1px solid #ccc; margin-top:0; padding-left:0; list-style:none;}
+#questions > li {border-top:1px solid #ccc; margin:0; padding:0 0.5em 0.5em 42px;}
+h1 {font-size:1.5em; margin:0; padding:0.25em 0;}
+h2 {font-size:1.25em; position:relative;}
+h3 {font-size:1.1em; margin:0.2em 0;}
+h2, p {margin-top:0.5em; margin-bottom:0.5em;}
+.prod {font-weight:bold; background-color:#eee; border: 1px solid #888; position:absolute; margin-left:-40px; display:inline-block; width:32px; text-align:center;}
+.involved {background-color:#ffe;}
+.gopreview {font-size:1.1em; font-weight:bold; background-color:#eee; float:right; display:inline-block; width:32px; text-align:center;}
+.qlink {text-decoration:none; display:block;}
+.qlink:hover {background-color:#ffa;}
+.op {font-weight:bold;}
+.content {word-wrap: break-word;}
+.content pre {white-space:pre-wrap;}
+.content blockquote {background-color: #ddd;}
+.lastans a:link {color:#f00; font-weight:bold;}
+.lastans a:visited {color:#aaa; font-weight:normal;}
+.solved {background-color:#eee;}
+.locked h2 a::before {content: "🔒"; margin-right:3px;}
+.gotosolut a:link {font-weight:bold;}
+#answers {width:45%; float:right; height:calc(100vh - 41px - 18px); overflow-y:scroll; border-top:1px solid #ccc; border-bottom:1px solid #ccc; margin-top:0; padding-left:8px;}
+.anslist {margin-top:0; padding-left:0; list-style:none;}
+.anslist > li {border-top:1px solid #ccc; margin:0; padding:0 0.5em 0.5em 0;}
+.anslink {position:relative;}
+.ansavatar {float:left; margin:0 6px 2px 0;}
+.solut {background-color:#efe;}
+#copy {position:fixed; bottom:0; font-size:11px;}
+</style>
+</head>
+<body>
+<h1>My Questions (Beta) <span style="float:right; font-size:16px;">Updated: <span id="updttime">N/A</span> <button onclick="updateNow(); return false;">Update Now</button></span></h1>
+<p id="loadmsg" style="display:none;">Loading...</p>
+<ul id="questions" class="involved"></ul>
+<div id="answers"><p>Click a Question to display Answers here (Ctrl+click or Shift+click to load the question on SuMo)</p><p id="answertop"><button onclick="document.getElementById('answers').scrollTop = 0">Back to top</button></p></div>
+<div style="clear:both"></div>
+<noscript><p>JavaScript is required for this page!</p></noscript>
+<div id="copy">Version 2018.08.07. Copyright &copy; 2018 Jefferson "jscher2000" Scher. License: <a href="https://www.mozilla.org/MPL/2.0/">MPL 2.0</a> Settings: <a href="pref.html">Preferences page</a></div>
+<script type="text/javascript">
+var lso, sumouser = "", getprod = "", locale = "en-US", apilocale = "N", pages = 3;
+// Set up the form with any saved data or apply defaults
+lso = window.localStorage;
+if (lso){
+	if (lso.prefuser) sumouser = lso.prefuser;
+	if (lso.prefproduct) getprod = lso.prefproduct;
+	if (lso.preflocale) locale = lso.preflocale;
+	if (lso.prefapiloc) apilocale = lso.prefapiloc;
+	if (lso.prefpages) pages = lso.prefpages;
+}
+if (sumouser == "") {
+	// username is required
+	window.alert("SuMo username preference not found. This page will redirect to a preferences page.")
+	window.location.href = window.location.href.replace("myq", "pref");
+}
+if (apilocale == "Y") apilocale = locale;
+else apilocale = "";
+locale += "/";
+function showQ(apiObj){
+	var questions = apiObj.results;
+	var list=document.getElementById("questions");
+	var prods = [];
+	prods['firefox'] = "Fx";
+	prods['thunderbird'] = "TB";
+	prods['mobile'] = "F/A";
+	prods['ios'] = "iOS";
+	prods['focus-firefox'] = "Fo";
+	prods['firefox-os'] = "OS";
+	prods['webmaker'] = "Wm";
+	prods['firefox-rocket'] = "Ro";
+	prods['firefox-fire-tv'] = "TV";
+	prods['firefox-enterprise'] = "F/E";
+	for (var i=questions.length; i>0; i--){
+		var qid = questions[i-1].id;
+		var qlink = 'https://support.mozilla.org/'+locale+'questions/'+qid;
+		var updt = questions[i-1].updated;
+		var poster = (questions[i-1].creator.display_name) ? scrubbed(questions[i-1].creator.display_name) : scrubbed(questions[i-1].creator.username);
+		// Test whether this item already is listed and, if so, if it has been updated, move it to the top of the list
+		var qli = document.getElementById('Q'+qid);
+		if (qli){
+			if(qli.getAttribute("updated") != updt){
+				if (qli != list.firstChild) list.insertBefore(qli, list.firstChild);
+				qli.setAttribute("updated",updt);
+				qli.getElementsByClassName("updt")[0].innerHTML='<strong>'+localtime(updt)+'</strong>';
+				if (questions[i-1].num_answers != qli.getElementsByClassName("reps")[0].innerHTML) qli.getElementsByClassName("reps")[0].innerHTML='<strong>'+questions[i-1].num_answers+'</strong>';
+				// In case question was moved, correct the product
+				qli.querySelector(".prod").textContent = prods[questions[i-1].product];
+			}
+		} else {
+			// ITEM IS NOT LISTED: Add item to the list
+			var newli = document.createElement("li");
+			newli.id = 'Q'+qid;
+			newli.setAttribute("updated",updt);
+			newli.setAttribute("product",questions[i-1].product);
+			newli.innerHTML = '<h2><span class="prod">'+prods[questions[i-1].product]+'</span><!-- <button class="gopreview" onclick="goPreview(\''+qid+'\'); return false;" title="Preview Answers">&#x25ba;</button> --><a href="'+qlink+'" target="_blank" class="qlink">'+scrubbed(questions[i-1].title)+'</a></h2>\n';
+			var qfull = questions[i-1].content.substr(0, questions[i-1].content.length-4);
+			if (qfull.indexOf('</p>')>-1){
+				var qpar1 = qfull.substr(0, qfull.indexOf('</p>'));
+				newli.innerHTML += '<div class="content"><div><p><span class="op">'+poster+'</span> ==&gt; '+qpar1.substr(3)+' (<a onclick="switchToFull(this); return false;" href="#">More</a>)</p></div><div style="display:none;"><p><span class="op">'+poster+'</span> ==&gt; '+linkfix(qfull.substr(3))+' (<a onclick="switchToPart(this); return false;" href="#">Less</a>)</p></div></div>\n';
+			}
+			else newli.innerHTML += '<div class="content"><span class="op">'+poster+'</span> ==&gt; '+linkfix(qfull.substr(3))+'</div>\n';
+			// Poster, Created, Updated, Replies
+			newli.innerHTML += '<p><em>Posted</em> '+localtime(questions[i-1].created)+'. <em>Updated</em> <span class="updt">'+localtime(updt)+'</span>. <em>Replies:</em> <span class="reps">'+questions[i-1].num_answers+'</span> <span class="gotosolut"></span> <span class="lastans"></span></p>\n';
+			// Add to document
+			qli = list.insertBefore(newli, list.firstChild);
+		}
+		qli.className="";
+		if (questions[i-1].is_solved==true) qli.classList.add("solved");
+		else qli.classList.remove("solved");
+		if (questions[i-1].is_locked==true) qli.classList.add("locked");
+		else qli.classList.remove("locked");
+		if (questions[i-1].last_answer > 0){
+			var threadpage = Math.ceil(questions[i-1].num_answers/20);
+			if (threadpage > 1) threadpage = "?page=" + threadpage;
+			else threadpage = "";
+			if (questions[i-1].is_solved){
+				qli.getElementsByClassName("gotosolut")[0].innerHTML='<a href="'+qlink+threadpage+'#answer-'+questions[i-1].solution+'" target="_blank">Solution</a>';
+				qli.getElementsByClassName("gotosolut")[0].setAttribute("solnum", questions[i-1].solution);
+			} 
+			qli.getElementsByClassName("lastans")[0].innerHTML='<a href="'+qlink+threadpage+'#answer-'+questions[i-1].last_answer+'" target="_blank">Last&nbsp;Reply</a>';
+		}
+	}
+	document.getElementById("updttime").innerHTML = localtime("");
+}
+function scrubbed(txt){
+    return txt.replace(/[&<>]/g, function($0) {
+        return "&" + {"&":"amp", "<":"lt", ">":"gt"}[$0] + ";";
+    });
+}
+function linkfix(txt){
+	txt = txt.replace(/href="/g,'target="_blank" href="');
+	return txt.replace(/href="\//g,'href="https://support.mozilla.org/');
+}
+function getQ(pg){
+	var url = 'https://support.mozilla.org/api/2/question/?format=json&ordering=-updated&is_spam=False&is_locked=False&involved='+sumouser+'&page='+pg;
+	if (getprod != "") url += '&product='+getprod;
+	var request = new XMLHttpRequest();
+	request.onreadystatechange = function() {
+		if (request.readyState==4) {
+		  if (request.status==200) {
+			var respObj = JSON.parse(request.responseText);
+			if (respObj.errdesc){
+				alert(respObj.errdesc);
+				return;
+			}
+			document.getElementById("loadmsg").style.display = "";
+			showQ(respObj);
+			request = null;
+			intpg = parseInt(pg);
+			if (intpg > 1){
+				intpg--
+				getQ(intpg);
+			} else{
+				// Clear Loading message on last pass
+				document.getElementById("loadmsg").style.display = "none";
+			}
+		  }
+		}
+	}
+	request.open("get", url, true);
+	request.send();
+}
+function localtime(strDT){
+	if (strDT != "") var dt=new Date(strDT);
+	else var dt = new Date;
+	return dt.toLocaleString().replace(",", "");
+}
+function refreshList(){
+	getQ('1');
+	document.getElementById("updttime").innerHTML = '<em style="color:#080;">Updating...</em>';
+}
+function updateNow(){
+	window.clearInterval(refresher); // stop the current cycle
+	getQ(''+pages);
+	document.getElementById("updttime").innerHTML = '<em>Updating...</em>';
+	refresher = window.setInterval(refreshList, 180*1000); // refresh every 3 minutes
+}
+function switchToFull(el){
+	el.parentNode.parentNode.style.display = "none";
+	el.parentNode.parentNode.nextSibling.style.display = "";
+}
+function switchToPart(el){
+	el.parentNode.parentNode.style.display = "none";
+	el.parentNode.parentNode.previousSibling.style.display = "";
+}
+document.getElementById("questions").scrollTop = 0;
+getQ(''+pages);
+var refresher = window.setInterval(refreshList, 180*1000); // refresh every 3 minutes
+
+function checkPreview(e){
+	// use default behavior for Ctrl+click and Shift+click
+	if (e.ctrlKey || e.shiftKey) return;
+	// check target
+	if (e.target.className != "qlink") return;
+	// display answers in preview div
+	var qnum = e.target.href.substr(e.target.href.lastIndexOf("/")+1);
+	goPreview(qnum);
+	e.preventDefault();
+	e.stopPropagation();
+	return false;
+}
+document.getElementById("questions").addEventListener("click", checkPreview, false);
+function goPreview(quest,next){
+	// Check for existing answer for this question and create if needed
+	var ansprev = document.querySelector('#answers #preview'+quest);
+	if (!ansprev) {
+		var divnew = document.createElement("div");
+		divnew.id = 'preview'+quest;
+		var h3new = document.createElement("h3");
+		var qtext = document.querySelector('#Q'+quest+' a').textContent;
+		h3new.appendChild(document.createTextNode(qtext));
+		divnew.appendChild(h3new);
+		divnew.appendChild(document.querySelector('#Q'+quest+' .content').cloneNode(true));
+		var listnew = document.createElement("ol");
+		listnew.id = 'ans'+quest;
+		listnew.setAttribute("updated", "0");
+		listnew.className = "anslist";
+		divnew.appendChild(listnew);
+		document.getElementById("answers").appendChild(divnew);
+	}
+	if (next) var url=next;
+	else var url = 'https://support.mozilla.org/api/2/answer/?format=json&question='+quest+'&is_spam=False&ordering=id';
+	var request = new XMLHttpRequest();
+	request.onreadystatechange = function() {
+		if (request.readyState==4) {
+		  if (request.status==200) {
+			var respObj = JSON.parse(request.responseText);
+			if (respObj.errdesc){
+				alert(respObj.errdesc);
+				return;
+			}
+			showA(respObj);
+			var nxturi = respObj.next;
+			request = null;
+			if (nxturi != null && nxturi != 'null') goPreview(quest,nxturi);
+		  }
+		}
+	}
+	request.open("get", url, true);
+	request.send();
+	document.getElementById("answers").appendChild(document.getElementById("answertop"));
+	var ansdivs = document.getElementById("answers").children;
+	for (var i=0; i<ansdivs.length-1; i++){
+		if (ansdivs[i].id == 'preview'+quest) ansdivs[i].style.display = "";
+		else ansdivs[i].style.display = "none";
+	}
+}
+function showA(apiObj){
+	var answers = apiObj.results;
+	var threadpage = "";
+	var prevurl = apiObj.previous;
+	if (prevurl){
+		if (prevurl.indexOf("page=") > -1){
+			threadpage = '?page=' + (parseInt(prevurl.substr(prevurl.indexOf("page=")+5, 1)) + 1);
+		} else {
+			threadpage = '?page=2';
+		}
+	} 
+	var qnum = answers[0].question;
+	var list = document.querySelector('#answers #ans'+qnum);
+	// TODO Check for update times on Q and A to see whether any action is needed
+	var op = document.querySelector('#Q'+qnum+' .op').textContent;
+	var sol = document.querySelector('#Q'+qnum+' .gotosolut').getAttribute("solnum");
+	//var scrollEl = document.getElementById("answers");
+	for (var k=0; k<answers.length; k++){
+		var ansid = answers[k].id;
+		var qlink = 'https://support.mozilla.org/'+locale+'questions/'+qnum;
+		var updt = answers[k].updated;
+		var poster = (answers[k].creator.display_name) ? scrubbed(answers[k].creator.display_name) : scrubbed(answers[k].creator.username);
+		// Test whether this item already is listed and, if so, if it has been updated, replace the contents
+		var ansli = document.getElementById('A'+ansid);
+		if (ansli){
+			if(ansli.getAttribute("updated") != updt){
+				// Add updated notation and replace content
+				ansli.setAttribute("updated", updt);
+				ansli.getElementsByClassName("updt")[0].innerHTML = ' <strong>'+localtime(updt)+'</strong>';
+				ansli.getElementsByClassName("content")[0].innerHTML = linkfix(answers[k].content.replace(/(\n)(\<|\<\/)(p|ul|li|blockquote|hr)/g,"$2$3").replace(/(p|ul|li|blockquote|br)(\>\n)/g,"$1>").replace(/\n/g, "<br>"));
+				//scrollEl = ansli;
+			}
+		} else {
+			// ITEM IS NOT LISTED: Add answer to the list
+			var newli = document.createElement("li");
+			newli.id = 'A'+ansid;
+			newli.setAttribute("updated", updt);
+			if (poster == op) poster = '[OP] '+poster;
+			var anscont = linkfix(answers[k].content.replace(/(\n)(\<|\<\/)(p|ul|li|blockquote|hr)/g,"$2$3").replace(/(p|ul|li|blockquote|br)(\>\n)/g,"$1>").replace(/\n/g, "<br>"));
+			newli.innerHTML = '<p class="anslink"><img src="'+answers[k].creator.avatar+'" class="ansavatar"><a href="'+qlink+threadpage+'#answer-'+ansid+'" target="_blank">'+poster+' at '+localtime(answers[k].created)+'</a> <!--<button onclick="markVisited(this.previousElementSibling)">V</button>--><span class="updt"></span></p>\n';
+			newli.innerHTML += '<div class="content">'+anscont+'</div>\n';
+			// Add to document
+			ansli = list.appendChild(newli);
+		}
+		if (sol){
+			if (ansid == sol){
+				ansli.className = "solut";
+				if (ansli.getElementsByClassName("anslink")[0].innerHTML.indexOf(" [SOLUTION]") == -1)
+					ansli.getElementsByClassName("anslink")[0].innerHTML += " [SOLUTION]";
+			} else {
+				if (ansli.className == "solut"){
+					ansli.className = "";
+					ansli.getElementsByClassName("anslink")[0].innerHTML.replace(" [SOLUTION]", "");
+				}
+			}
+		}
+	}
+	list.lastChild.scrollIntoView({block:"start",behavior:"smooth"});
+}
+</script>
+</body>
+</html>

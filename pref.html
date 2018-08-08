@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Preferences &mdash; My SuMo Questions (Beta)</title>
+<style type="text/css">
+html, body {}
+body {font-family:sans-serif; margin:0 8px;}
+h1 {font-size:1.5em; margin:0; padding:0.25em 0;}
+h2 {font-size:1.25em; position:relative;}
+h3 {font-size:1.1em; margin:0.2em 0;}
+h2, p {margin-top:0.5em; margin-bottom:0.5em;}
+#copy {position:fixed; bottom:0; font-size:0.6em;}
+.errmsg {font-weight:bold; color: #f00;}
+</style>
+</head>
+<body>
+<h1>Preferences for My SuMo Questions (Beta)</h1>
+<p>Preferences are retained in local storage (DOM storage) for this domain.
+<noscript><p>JavaScript is required for this page!</p></noscript>
+<form id="prefs" name="prefs" action="#" onsubmit="updatePrefs(); return false;">
+<p><label>SuMo username: <input type="text" name="username" id="username" placeholder="username" length="30"></label> <span id="username_err" class="errmsg"></span></p>
+<p><label for="product">Product filter: </label><select name="product" id="product">
+	<option value="">All</option>
+	<option value="firefox">Firefox</option>
+	<option value="thunderbird">Thunderbird</option>
+	<option value="firefox-enterprise">Firefox for Enterprise</option>
+	<option value="mobile">Firefox for Android</option>
+	<option value="ios">Firefox for iOS</option>
+	<option value="focus-firefox">Firefox Focus</option>
+	<option value="firefox-fire-tv">Firefox for Fire TV</option>
+	<option value="firefox-rocket">Firefox Rocket</option>
+	<option value="webmaker">Webmaker</option>
+	<option value="firefox-os">FirefoxOS</option>
+</select> <span id="product_err" class="errmsg"></span></p>
+<p><label for="records">Records to retrieve: </label><select name="records" id="records">
+	<option value="1">20</option>
+	<option value="2">40</option>
+	<option value="3" selected>60</option>
+	<option value="4">80</option>
+	<option value="5">100</option>
+</select> <span id="records_err" class="errmsg"></span></p>
+<p><label>Locale for links: <input type="text" name="locale" id="locale" placeholder="locale" length="6"></label> <span id="locale_err" class="errmsg"></span>
+<label><input type="checkbox" name="apiloc" id="apiloc"> Also use locale for API calls (if applicable)</label></p>
+<p><input type="submit" id="savebtn" name="savebtn" value="Save Changes"> <span id="save_status" class="errmsg"></span></p>
+<p>Return to: <a href="myq.html">My Questions</a></p>
+</form>
+<div id="copy">Version 2018.08.07. Copyright &copy; 2018 Jefferson "jscher2000" Scher. License: <a href="https://www.mozilla.org/MPL/2.0/">MPL 2.0</a></div>
+<script type="text/javascript">
+var lso, prefuser = "", prefproduct = "", preflocale = "en-US", prefapiloc = "N", prefpages = 3, optsel;
+// Set up the form with any saved data or apply defaults
+lso = window.localStorage;
+if (lso){
+	if (lso.prefuser) prefuser = lso.prefuser;
+	if (lso.prefproduct) prefproduct = lso.prefproduct;
+	if (lso.preflocale) preflocale = lso.preflocale;
+	else lso.preflocale = preflocale;
+	if (lso.prefapiloc) prefapiloc = lso.prefapiloc;
+	else lso.prefapiloc = prefapiloc;
+	if (lso.prefpages) prefpages = lso.prefpages;
+}
+document.getElementById("username").value = prefuser;
+optsel = document.querySelector('#product option[value="'+prefproduct+'"]');
+if (optsel) optsel.selected = true;
+else document.getElementById("product").options[0].selected = true;
+document.getElementById("locale").value = preflocale;
+document.getElementById("records").selectedIndex = prefpages - 1;
+if (prefapiloc == "Y") {
+	document.getElementById("apiloc").checked = true;
+	document.getElementById("apiloc").setAttribute("checked", "checked");
+} else {
+	document.getElementById("apiloc").checked = false;
+	if (document.getElementById("apiloc").hasAttribute("checked")) document.getElementById("apiloc").removeAttribute("checked");
+}
+function updatePrefs(){
+	document.getElementById("save_status").innerHTML = '';
+	// Validate strings
+	var nosave = false;
+	var usernamevalid = /^[0-9a-zA-Z.\-_]+$/;
+	if (!usernamevalid.test(document.getElementById("username").value)){
+		document.getElementById("username_err").innerHTML = "Legal characters: letters, numbers, period, hyphen, and underscore";
+		nosave = true;
+	} else {
+		document.getElementById("username_err").innerHTML = "";
+	}
+	var productvalid = /^[a-z\-]+$/;
+	if (document.getElementById("product").value != ""){
+		if (!productvalid.test(document.getElementById("product").value)){
+			document.getElementById("product_err").innerHTML = "Legal characters: letters and hyphen";
+			nosave = true;
+		} else {
+			document.getElementById("product_err").innerHTML = "";
+		}
+	}
+	var localevalid = /^[a-zA-Z\-]+$/;
+	if (!localevalid.test(document.getElementById("locale").value)){
+		document.getElementById("locale_err").innerHTML = "Legal characters: letters and hyphen";
+		nosave = true;
+	} else {
+		document.getElementById("locale_err").innerHTML = "";
+	}
+	var pagesvalid = /^[1-5]$/;
+	if (document.getElementById("records").value != ""){
+		if (!pagesvalid.test(document.getElementById("records").value)){
+			document.getElementById("records_err").innerHTML = "Please choose from the list";
+			nosave = true;
+		} else {
+			document.getElementById("records_err").innerHTML = "";
+		}
+	}
+	// Update storage
+	if (nosave == true){
+		document.getElementById("save_status").innerHTML = "Not saved, see error notes";
+		return;
+	}
+	if (!lso) lso = window.localStorage;
+	var saveerr = '';
+	if (document.getElementById("username").value != prefuser) {
+		try {
+			prefuser = document.getElementById("username").value;
+			lso.prefuser = prefuser;
+		} catch (err) {
+			saveerr += 'Error saving username: ' + err + '<br>';
+		}
+	}
+	if (document.getElementById("product").value != prefproduct) {
+		try {
+			prefproduct = document.getElementById("product").value;
+			lso.prefproduct = prefproduct;
+		} catch (err) {
+			saveerr += 'Error saving product: ' + err + '<br>';
+		}
+	}
+	if (document.getElementById("locale").value != preflocale) {
+		try {
+			preflocale = document.getElementById("locale").value;
+			lso.preflocale = preflocale;
+		} catch (err) {
+			saveerr += 'Error saving locale: ' + err + '<br>';
+		}
+	}
+	if (document.getElementById("apiloc").checked && prefapiloc != "Y") {
+		try {
+			prefapiloc = "Y";
+			lso.prefapiloc = prefapiloc;
+		} catch(err) {
+			console.log('Error saving prefapiloc');
+		}
+	}
+	if (!document.getElementById("apiloc").checked && prefapiloc != "N") {
+		try {
+			prefapiloc = "N";
+			lso.prefapiloc = prefapiloc;
+		} catch(err) {
+			console.log('Error saving prefapiloc');
+		}
+	}
+	if (document.getElementById("records").value != prefpages) {
+		try {
+			prefpages = document.getElementById("records").value;
+			lso.prefpages = prefpages;
+		} catch (err) {
+			saveerr += 'Error saving records: ' + err + '<br>';
+		}
+	}
+	if (saveerr != ''){
+		document.getElementById("save_status").innerHTML = saveerr;
+	} else {
+		document.getElementById("save_status").innerHTML = "Saved!";
+	}
+}
+</script>
+</body>
+</html>
