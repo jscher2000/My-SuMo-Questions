@@ -4,8 +4,10 @@
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <title>My SuMo Questions (Beta)</title>
 <style type="text/css">
-html, body {height:100vh; padding:0; background-color:#fcfcfc;}
-body {font-family:sans-serif; font-size:16px; margin:0 8px;}
+@media screen {
+  html, body {height:100vh; padding:0; background-color:#f6f9fc;}
+  body {font-family:sans-serif; font-size:16px; margin:0 8px;}
+}
 #loadmsg {position:absolute; top:-6px; left:25%; font-size:2em; color: #080;}
 #questions {width:54%; float:left; height:calc(100vh - 41px - 18px); overflow-y:scroll; border-bottom:1px solid #ccc; margin-top:0; padding-left:0; list-style:none;}
 #questions > li {border-top:1px solid #ccc; margin:0; padding:0 0.5em 0.5em 42px;}
@@ -31,19 +33,31 @@ h2, p {margin-top:0.5em; margin-bottom:0.5em;}
 .anslist {margin-top:0; padding-left:0; list-style:none;}
 .anslist > li {border-top:1px solid #ccc; margin:0; padding:0 0.5em 0.5em 0;}
 .anslink {position:relative;}
+.solut .anslink::after {content: "[SOLUTION]"; margin-left: 3px;}
+.helpful .anslink::after {content: "❤️"; margin-left: 3px;}
+.solut.helpful .anslink::after {content: "[SOLUTION] ❤️"; margin-left: 3px;}
 .ansavatar {float:left; margin:0 6px 2px 0;}
 .solut {background-color:#efe;}
-#copy {position:fixed; bottom:0; font-size:11px;}
+#answertop {position:fixed; bottom:4px; right:30px; font-size:36px;}
+#answertop button {height:2em; background-color:#fff; border:1px solid #aaa; border-radius:4px; margin-left:1px}
+#copy {position:fixed; bottom:1px; font-size:11px;}
+#updtspan {float:right; font-size:16px;}
+@media print {
+  #questions, #copy, #updtspan, #answertop {display: none;}
+  #answers {width: 100%; float: none; height: auto; overflow: visible; border: none;}
+  #answers .qlink {color: #000; padding-left:8px; border-left:4px solid #ccc;}
+  #answers .qlink::after {content: attr(href); font-size:0.75em; display:block; margin-bottom:1em;}
+}
 </style>
 </head>
 <body>
-<h1>My Questions (Beta) <span style="float:right; font-size:16px;">Updated: <span id="updttime">N/A</span> <button onclick="updateNow(); return false;">Update Now</button></span></h1>
+<h1>My Questions (Beta) <span id="updtspan">Updated: <span id="updttime">N/A</span> <button onclick="updateNow(); return false;">Update Now</button></span></h1>
 <p id="loadmsg" style="display:none;">Loading...</p>
 <ul id="questions" class="involved"></ul>
-<div id="answers"><p>Click a Question to display Answers here (Ctrl+click or Shift+click to load the question on SuMo)</p><p id="answertop"><button onclick="document.getElementById('answers').scrollTop = 0">Back to top</button></p></div>
+<div id="answers"><p>Click a Question to display Answers here (Ctrl+click or Shift+click to load the question on SuMo)</p><p id="answertop"><button onclick="document.getElementById('answers').scrollTop = 0; this.blur();" title="Top of Thread">🔝</button><button onclick="window.print(); this.blur();" title="Print Thread" style="filter:grayscale(1);">🖨️</button></p></div>
 <div style="clear:both"></div>
 <noscript><p>JavaScript is required for this page!</p></noscript>
-<div id="copy">Version 2018.08.09. Copyright &copy; 2018 Jefferson "jscher2000" Scher. License: <a href="https://www.mozilla.org/MPL/2.0/">MPL 2.0</a> Settings: <a href="pref.html">Preferences page</a></div>
+<div id="copy">Version 2018.08.10. Copyright &copy; 2018 Jefferson "jscher2000" Scher. License: <a href="https://www.mozilla.org/MPL/2.0/">MPL 2.0</a> Settings: <a href="pref.html">Preferences page</a></div>
 <script type="text/javascript">
 var lso, sumouser = "", getprod = "", locale = "en-US", apilocale = "N", pages = 3;
 // Set up the form with any saved data or apply defaults
@@ -57,8 +71,17 @@ if (lso){
 }
 if (sumouser == "") {
 	// username is required
-	window.alert("SuMo username preference not found. This page will redirect to a preferences page.")
-	window.location.href = window.location.href.replace("myq", "pref");
+	if (window.location.search != ''){ //check for username on address bar
+		var unparts = window.location.search.split('username=');
+		if (unparts.length > 1 && unparts[1].length > 0){
+			var usernamevalid = /^[0-9a-zA-Z.\-_]+$/;
+			if (usernamevalid.test(unparts[1])) sumouser = unparts[1];
+		}
+	}
+	if (sumouser == "") {
+		window.alert("SuMo username preference not found. This page will redirect to a preferences page.")
+		window.location.href = window.location.href.replace("myq", "pref");
+	}
 }
 if (apilocale == "Y") apilocale = locale;
 else apilocale = "";
@@ -227,8 +250,7 @@ function goPreview(quest,next){
 		divnew.id = 'preview'+quest;
 		if (document.getElementById('Q'+quest).classList.contains('locked')) divnew.classList.add('locked');
 		var h3new = document.createElement("h3");
-		var qtext = document.querySelector('#Q'+quest+' a').textContent;
-		h3new.appendChild(document.createTextNode(qtext));
+		h3new.appendChild(document.querySelector('#Q'+quest+' a').cloneNode(true));
 		divnew.appendChild(h3new);
 		divnew.appendChild(document.querySelector('#Q'+quest+' .content').cloneNode(true));
 		var listnew = document.createElement("ol");
@@ -278,7 +300,7 @@ function showA(apiObj){
 	} 
 	var qnum = answers[0].question;
 	var list = document.querySelector('#answers #ans'+qnum);
-	// TODO Check for update times on Q and A to see whether any action is needed
+	// TODO Check for update times on Q to see whether any action is needed
 	var op = document.querySelector('#Q'+qnum+' .op').textContent;
 	var sol = document.querySelector('#Q'+qnum+' .gotosolut').getAttribute("solnum");
 	//var scrollEl = document.getElementById("answers");
@@ -309,18 +331,10 @@ function showA(apiObj){
 			// Add to document
 			ansli = list.appendChild(newli);
 		}
-		if (sol){
-			if (ansid == sol){
-				ansli.className = "solut";
-				if (ansli.getElementsByClassName("anslink")[0].innerHTML.indexOf(" [SOLUTION]") == -1)
-					ansli.getElementsByClassName("anslink")[0].innerHTML += " [SOLUTION]";
-			} else {
-				if (ansli.className == "solut"){
-					ansli.className = "";
-					ansli.getElementsByClassName("anslink")[0].innerHTML.replace(" [SOLUTION]", "");
-				}
-			}
-		}
+		if (sol && ansid == sol) ansli.classList.add("solut");
+		else ansli.classList.remove("solut");
+		if (answers[k].num_helpful_votes - answers[k].num_unhelpful_votes > 0) ansli.classList.add("helpful");
+		else ansli.classList.remove("helpful");
 	}
 	list.lastChild.scrollIntoView({block:"start",behavior:"smooth"});
 }
