@@ -27,7 +27,7 @@ h2, p {margin-top:0.5em; margin-bottom:0.5em;}
 .lastans a:link {color:#f00; font-weight:bold;}
 .lastans a:visited {color:#aaa; font-weight:normal;}
 .solved {background-color:#eee;}
-.locked h2 a::before, .locked h3::before {content: "🔒"; margin-right:3px;}
+.locked h2 a::before, .locked h3 a::before {content: "🔒"; margin-right:3px;}
 .gotosolut a:link {font-weight:bold;}
 #answers {width:45%; float:right; height:calc(100vh - 41px - 18px); overflow-y:scroll; border-top:1px solid #ccc; border-bottom:1px solid #ccc; margin-top:0; padding-left:8px;}
 .anslist {margin-top:0; padding-left:0; list-style:none;}
@@ -57,7 +57,7 @@ h2, p {margin-top:0.5em; margin-bottom:0.5em;}
 <div id="answers"><p>Click a Question to display Answers here (Ctrl+click or Shift+click to load the question on SuMo)</p><p id="answertop"><button onclick="document.getElementById('answers').scrollTop = 0; this.blur();" title="Top of Thread">🔝</button><button onclick="window.print(); this.blur();" title="Print Thread" style="filter:grayscale(1);">🖨️</button></p></div>
 <div style="clear:both"></div>
 <noscript><p>JavaScript is required for this page!</p></noscript>
-<div id="copy">Version 2018.08.10. Copyright &copy; 2018 Jefferson "jscher2000" Scher. License: <a href="https://www.mozilla.org/MPL/2.0/">MPL 2.0</a> Settings: <a href="pref.html">Preferences page</a></div>
+<div id="copy">Version 2018.08.19. Copyright &copy; 2018 Jefferson "jscher2000" Scher. License: <a href="https://www.mozilla.org/MPL/2.0/">MPL 2.0</a> Settings: <a href="pref.html">Preferences page</a></div>
 <script type="text/javascript">
 var lso, sumouser = "", getprod = "", locale = "en-US", apilocale = "N", pages = 3;
 // Set up the form with any saved data or apply defaults
@@ -66,8 +66,8 @@ if (lso){
 	if (lso.prefuser) sumouser = lso.prefuser;
 	if (lso.prefproduct) getprod = lso.prefproduct;
 	if (lso.preflocale) locale = lso.preflocale;
-	if (lso.prefapiloc) apilocale = lso.prefapiloc;
 	if (lso.prefpages) pages = lso.prefpages;
+	if (lso.prefapiloc) apilocale = lso.prefapiloc;
 }
 if (sumouser == "") {
 	// username is required
