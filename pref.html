@@ -22,16 +22,16 @@ h2, p {margin-top:0.5em; margin-bottom:0.5em;}
 <p><label>SuMo username: <input type="text" name="username" id="username" placeholder="username" length="30"></label> <span id="username_err" class="errmsg"></span></p>
 <p><label for="product">Product filter: </label><select name="product" id="product">
 	<option value="">All</option>
-	<option value="firefox">Firefox</option>
-	<option value="thunderbird">Thunderbird</option>
+	<option value="firefox">Firefox (desktop)</option>
 	<option value="firefox-enterprise">Firefox for Enterprise</option>
-	<option value="mobile">Firefox for Android</option>
+	<option value="thunderbird">Thunderbird</option>
+	<option value="mobile">Firefox for Android (fennec)</option>
+	<option value="firefox-preview">Firefox Preview for Android (fenix)</option>
 	<option value="ios">Firefox for iOS</option>
-	<option value="focus-firefox">Firefox Focus</option>
-	<option value="firefox-fire-tv">Firefox for Fire TV</option>
-	<option value="firefox-rocket">Firefox Rocket</option>
-	<option value="webmaker">Webmaker</option>
-	<option value="firefox-os">FirefoxOS</option>
+	<option value="focus-firefox">Firefox Focus (iOS and Android)</option>
+	<option value="firefox-lite">Firefox Lite</option>
+	<option value="firefox-amazon-devices">Firefox for Fire TV/Echo Show</option>
+	<option value="firefox-reality">Firefox Reality</option>
 </select> <span id="product_err" class="errmsg"></span></p>
 <p><label for="records">Records to retrieve: </label><select name="records" id="records">
 	<option value="1">20</option>
@@ -45,7 +45,7 @@ h2, p {margin-top:0.5em; margin-bottom:0.5em;}
 <p><input type="submit" id="savebtn" name="savebtn" value="Save Changes"> <span id="save_status" class="errmsg"></span></p>
 <p>Return to: <a href="myq.html">My Questions</a></p>
 </form>
-<div id="copy">Version 2018.08.07. Copyright &copy; 2018 Jefferson "jscher2000" Scher. License: <a href="https://www.mozilla.org/MPL/2.0/">MPL 2.0</a></div>
+<div id="copy">Version 2019.06.24. Copyright &copy; 2019 Jefferson "jscher2000" Scher. License: <a href="https://www.mozilla.org/MPL/2.0/">MPL 2.0</a></div>
 <script type="text/javascript">
 var lso, prefuser = "", prefproduct = "", preflocale = "en-US", prefapiloc = "N", prefpages = 3, optsel;
 // Set up the form with any saved data or apply defaults

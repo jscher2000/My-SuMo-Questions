@@ -53,11 +53,11 @@ h2, p {margin-top:0.5em; margin-bottom:0.5em;}
 <body>
 <h1>My Questions (Beta) <span id="updtspan">Updated: <span id="updttime">N/A</span> <button onclick="updateNow(); return false;">Update Now</button></span></h1>
 <p id="loadmsg" style="display:none;">Loading...</p>
-<ul id="questions" class="involved"></ul>
+<ul id="questions" class="involved" lastupdt=""></ul>
 <div id="answers"><p>Click a Question to display Answers here (Ctrl+click or Shift+click to load the question on SuMo)</p><p id="answertop"><button onclick="document.getElementById('answers').scrollTop = 0; this.blur();" title="Top of Thread">🔝</button><button onclick="window.print(); this.blur();" title="Print Thread" style="filter:grayscale(1);">🖨️</button></p></div>
 <div style="clear:both"></div>
 <noscript><p>JavaScript is required for this page!</p></noscript>
-<div id="copy">Version 2018.08.19. Copyright &copy; 2018 Jefferson "jscher2000" Scher. License: <a href="https://www.mozilla.org/MPL/2.0/">MPL 2.0</a> Settings: <a href="pref.html">Preferences page</a></div>
+<div id="copy">Version 2019.06.24. Copyright &copy; 2019 Jefferson "jscher2000" Scher. License/Source: <a href="https://www.mozilla.org/MPL/2.0/" rel="noopener" target="_blank">MPL 2.0</a>/<a href="https://github.com/jscher2000/My-SuMo-Questions" rel="noopener" target="_blank">Github</a> &bull; Settings: <a href="pref.html">Preferences page</a></div>
 <script type="text/javascript">
 var lso, sumouser = "", getprod = "", locale = "en-US", apilocale = "N", pages = 3;
 // Set up the form with any saved data or apply defaults
@@ -98,12 +98,17 @@ function showQ(apiObj){
 	prods['firefox-os'] = "OS";
 	prods['webmaker'] = "Wm";
 	prods['firefox-rocket'] = "Ro";
+	prods['firefox-lite'] = "F/L";
 	prods['firefox-fire-tv'] = "TV";
+	prods['firefox-amazon-devices'] = "Amz";
 	prods['firefox-enterprise'] = "F/E";
+	prods['firefox-reality'] = "F/R";
+	prods['firefox-preview'] = "FPr";
 	for (var i=0; i<questions.length; i++){
 		var qid = questions[i].id;
 		var qlink = 'https://support.mozilla.org/'+locale+'questions/'+qid;
 		var updt = questions[i].updated;
+		if (i==0 && apiObj.previous == null) list.setAttribute('lastupdt', updt.replace('T', ' ').replace('Z', ''));
 		var poster = (questions[i].creator.display_name) ? scrubbed(questions[i].creator.display_name) : scrubbed(questions[i].creator.username);
 		// Test whether this item already is listed and, if so, if it has been updated, move it to the top of the list
 		var qli = document.getElementById('Q'+qid);
@@ -176,6 +181,9 @@ function linkfix(txt){
 function getQ(pg, max){
 	var url = 'https://support.mozilla.org/api/2/question/?format=json&ordering=-updated&is_spam=False&involved='+sumouser+'&page='+pg;
 	if (getprod != "") url += '&product='+getprod;
+	if (document.getElementById("questions").getAttribute('lastupdt') !== '' && pg == '1'){
+		url += '&updated__gt='+encodeURIComponent(document.getElementById("questions").getAttribute('lastupdt'));
+	}
 	var request = new XMLHttpRequest();
 	request.onreadystatechange = function() {
 		if (request.readyState==4) {
