@@ -36,7 +36,7 @@ h2, p {margin-top:0.5em; margin-bottom:0.5em;}
 .solut .anslink::after {content: "[SOLUTION]"; margin-left: 3px;}
 .helpful .anslink::after {content: "❤️"; margin-left: 3px;}
 .solut.helpful .anslink::after {content: "[SOLUTION] ❤️"; margin-left: 3px;}
-.ansavatar {float:left; margin:0 6px 2px 0;}
+.ansavatar {float:left; margin:0 6px 2px 0; max-height:48px; max-width:48px;}
 .solut {background-color:#efe;}
 #answertop {position:fixed; bottom:4px; right:30px; font-size:36px;}
 #answertop button {height:2em; background-color:#fff; border:1px solid #aaa; border-radius:4px; margin-left:1px}
@@ -57,17 +57,19 @@ h2, p {margin-top:0.5em; margin-bottom:0.5em;}
 <div id="answers"><p>Click a Question to display Answers here (Ctrl+click or Shift+click to load the question on SuMo)</p><p id="answertop"><button onclick="document.getElementById('answers').scrollTop = 0; this.blur();" title="Top of Thread">🔝</button><button onclick="window.print(); this.blur();" title="Print Thread" style="filter:grayscale(1);">🖨️</button></p></div>
 <div style="clear:both"></div>
 <noscript><p>JavaScript is required for this page!</p></noscript>
-<div id="copy">Version 2019.06.24. Copyright &copy; 2019 Jefferson "jscher2000" Scher. License/Source: <a href="https://www.mozilla.org/MPL/2.0/" rel="noopener" target="_blank">MPL 2.0</a>/<a href="https://github.com/jscher2000/My-SuMo-Questions" rel="noopener" target="_blank">Github</a> &bull; Settings: <a href="pref.html">Preferences page</a></div>
+<div id="copy">Version 2019.09.23. Copyright &copy; 2019 Jefferson "jscher2000" Scher. License/Source: <a href="https://www.mozilla.org/MPL/2.0/" rel="noopener" target="_blank">MPL 2.0</a>/<a href="https://github.com/jscher2000/My-SuMo-Questions" rel="noopener" target="_blank">Github</a> &bull; Settings: <a href="pref.html">Preferences page</a></div>
 <script type="text/javascript">
-var lso, sumouser = "", getprod = "", locale = "en-US", apilocale = "N", pages = 3;
+var lso, sumouser = "", pages = 3, prefmins = 3, getprod = "", locale = "en-US", apilocale = "N", prefapitz = 'Pacific';
 // Set up the form with any saved data or apply defaults
 lso = window.localStorage;
 if (lso){
 	if (lso.prefuser) sumouser = lso.prefuser;
+	if (lso.prefpages) pages = lso.prefpages;
+	if (lso.prefmins) prefmins = lso.prefmins;
 	if (lso.prefproduct) getprod = lso.prefproduct;
 	if (lso.preflocale) locale = lso.preflocale;
-	if (lso.prefpages) pages = lso.prefpages;
 	if (lso.prefapiloc) apilocale = lso.prefapiloc;
+	if (lso.prefapitz) prefapitz = lso.prefapitz;
 }
 if (sumouser == "") {
 	// username is required
@@ -178,10 +180,10 @@ function linkfix(txt){
 	txt = txt.replace(/href="/g,'target="_blank" href="');
 	return txt.replace(/href="\//g,'href="https://support.mozilla.org/');
 }
-function getQ(pg, max){
+function getQ(pg, max, updtonly){
 	var url = 'https://support.mozilla.org/api/2/question/?format=json&ordering=-updated&is_spam=False&involved='+sumouser+'&page='+pg;
 	if (getprod != "") url += '&product='+getprod;
-	if (document.getElementById("questions").getAttribute('lastupdt') !== '' && pg == '1'){
+	if (updtonly && document.getElementById("questions").getAttribute('lastupdt') !== ''){
 		url += '&updated__gt='+encodeURIComponent(document.getElementById("questions").getAttribute('lastupdt'));
 	}
 	var request = new XMLHttpRequest();
@@ -196,10 +198,10 @@ function getQ(pg, max){
 			document.getElementById("loadmsg").style.display = "";
 			showQ(respObj);
 			request = null;
-			if (max && pg != max){
+			if (respObj.next && max && pg != max){
 				intpg = parseInt(pg);
 				intpg++
-				getQ(''+intpg, max);
+				getQ(''+intpg, max, updtonly);
 			} else{
 				// Clear Loading message on last pass
 				document.getElementById("loadmsg").style.display = "none";
@@ -211,19 +213,26 @@ function getQ(pg, max){
 	request.send();
 }
 function localtime(strDT){
-	if (strDT != "") var dt=new Date(strDT);
-	else var dt = new Date;
+	if (strDT != ""){
+		var dt = new Date(strDT);
+		if (prefapitz == 'Pacific') { 
+			// roll the time forward 7 hours to UTC
+			dt.setUTCHours(dt.getUTCHours() + 7); 
+		}
+	} else { // Just use local time
+		var dt = new Date;
+	}
 	return dt.toLocaleString().replace(",", "");
 }
 function refreshList(){
-	getQ('1', '1');
+	getQ('1', '1', true);
 	document.getElementById("updttime").innerHTML = '<em style="color:#080;">Updating...</em>';
 }
 function updateNow(){
 	window.clearInterval(refresher); // stop the current cycle
-	getQ('1', ''+pages);
+	getQ('1', ''+pages, true);
 	document.getElementById("updttime").innerHTML = '<em>Updating...</em>';
-	refresher = window.setInterval(refreshList, 180*1000); // refresh every 3 minutes
+	refresher = window.setInterval(refreshList, prefmins*60*1000); // refresh every 3 minutes
 }
 function switchToFull(el){
 	el.parentNode.parentNode.style.display = "none";
@@ -234,8 +243,8 @@ function switchToPart(el){
 	el.parentNode.parentNode.previousSibling.style.display = "";
 }
 document.getElementById("questions").scrollTop = 0;
-getQ('1', ''+pages);
-var refresher = window.setInterval(refreshList, 180*1000); // refresh every 3 minutes
+getQ('1', ''+pages, false);
+var refresher = window.setInterval(refreshList, prefmins*60*1000); // refresh every 3 minutes
 
 function checkPreview(e){
 	// use default behavior for Ctrl+click and Shift+click
@@ -332,9 +341,14 @@ function showA(apiObj){
 			var newli = document.createElement("li");
 			newli.id = 'A'+ansid;
 			newli.setAttribute("updated", updt);
+			if (answers[k].created == updt){
+				var ansupd = '<span class="updt"></span>';
+			} else {
+				ansupd = '<span class="updt"> <strong>'+localtime(updt)+'</strong></span>';
+			}
 			if (poster == op) poster = '[OP] '+poster;
 			var anscont = linkfix(answers[k].content.replace(/(\n)(\<|\<\/)(p|ul|li|blockquote|hr)/g,"$2$3").replace(/(p|ul|li|blockquote|br)(\>\n)/g,"$1>").replace(/\n/g, "<br>"));
-			newli.innerHTML = '<p class="anslink"><img src="'+answers[k].creator.avatar+'" class="ansavatar"><a href="'+qlink+threadpage+'#answer-'+ansid+'" target="_blank">'+poster+' at '+localtime(answers[k].created)+'</a> <!--<button onclick="markVisited(this.previousElementSibling)">V</button>--><span class="updt"></span></p>\n';
+			newli.innerHTML = '<p class="anslink"><img src="'+answers[k].creator.avatar+'" class="ansavatar"><a href="'+qlink+threadpage+'#answer-'+ansid+'" target="_blank">'+poster+' at '+localtime(answers[k].created)+'</a> <!--<button onclick="markVisited(this.previousElementSibling)">V</button>-->' + ansupd + '</p>\n';
 			newli.innerHTML += '<div class="content">'+anscont+'</div>\n';
 			// Add to document
 			ansli = list.appendChild(newli);
