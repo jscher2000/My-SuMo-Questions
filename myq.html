@@ -57,9 +57,9 @@ h2, p {margin-top:0.5em; margin-bottom:0.5em;}
 <div id="answers"><p>Click a Question to display Answers here (Ctrl+click or Shift+click to load the question on SuMo)</p><p id="answertop"><button onclick="document.getElementById('answers').scrollTop = 0; this.blur();" title="Top of Thread">🔝</button><button onclick="window.print(); this.blur();" title="Print Thread" style="filter:grayscale(1);">🖨️</button></p></div>
 <div style="clear:both"></div>
 <noscript><p>JavaScript is required for this page!</p></noscript>
-<div id="copy">Version 2019.09.23. Copyright &copy; 2019 Jefferson "jscher2000" Scher. License/Source: <a href="https://www.mozilla.org/MPL/2.0/" rel="noopener" target="_blank">MPL 2.0</a>/<a href="https://github.com/jscher2000/My-SuMo-Questions" rel="noopener" target="_blank">Github</a> &bull; Settings: <a href="pref.html">Preferences page</a></div>
+<div id="copy">Version 2019.11.07. Copyright &copy; 2019 Jefferson "jscher2000" Scher. License/Source: <a href="https://www.mozilla.org/MPL/2.0/" rel="noopener" target="_blank">MPL 2.0</a>/<a href="https://github.com/jscher2000/My-SuMo-Questions" rel="noopener" target="_blank">Github</a> &bull; Settings: <a href="pref.html">Preferences page</a></div>
 <script type="text/javascript">
-var lso, sumouser = "", pages = 3, prefmins = 3, getprod = "", locale = "en-US", apilocale = "N", prefapitz = 'Pacific';
+var lso, sumouser = "", pages = 3, prefmins = 3, getprod = "", locale = "en-US", apilocale = "N", prefapitz = 'Pacific', prefupdttz = 'Pacific';
 // Set up the form with any saved data or apply defaults
 lso = window.localStorage;
 if (lso){
@@ -106,11 +106,12 @@ function showQ(apiObj){
 	prods['firefox-enterprise'] = "F/E";
 	prods['firefox-reality'] = "F/R";
 	prods['firefox-preview'] = "FPr";
+	prods['firefox-lockwise'] = "Lw";
 	for (var i=0; i<questions.length; i++){
 		var qid = questions[i].id;
 		var qlink = 'https://support.mozilla.org/'+locale+'questions/'+qid;
 		var updt = questions[i].updated;
-		if (i==0 && apiObj.previous == null) list.setAttribute('lastupdt', updt.replace('T', ' ').replace('Z', ''));
+		if (i==0 && apiObj.previous == null) list.setAttribute('lastupdt', updt);
 		var poster = (questions[i].creator.display_name) ? scrubbed(questions[i].creator.display_name) : scrubbed(questions[i].creator.username);
 		// Test whether this item already is listed and, if so, if it has been updated, move it to the top of the list
 		var qli = document.getElementById('Q'+qid);
@@ -184,7 +185,16 @@ function getQ(pg, max, updtonly){
 	var url = 'https://support.mozilla.org/api/2/question/?format=json&ordering=-updated&is_spam=False&involved='+sumouser+'&page='+pg;
 	if (getprod != "") url += '&product='+getprod;
 	if (updtonly && document.getElementById("questions").getAttribute('lastupdt') !== ''){
-		url += '&updated__gt='+encodeURIComponent(document.getElementById("questions").getAttribute('lastupdt'));
+		var lastupdt = document.getElementById("questions").getAttribute('lastupdt');
+		if (prefupdttz == 'Pacific' && prefapitz == 'UTC') { 
+			// TEMPORARY HACK AROUND: roll the lastupdt time back 8 hours to Pacific
+			var dt = new Date(lastupdt);
+			dt.setUTCHours(dt.getUTCHours() - 8);
+			lastupdt = dt.toISOString().slice(0, 19).replace('T', ' ');
+		} else {
+			lastupdt = lastupdt.replace('T', ' ').replace('Z', '');
+		}
+		url += '&updated__gt='+encodeURIComponent(lastupdt);
 	}
 	var request = new XMLHttpRequest();
 	request.onreadystatechange = function() {
@@ -216,8 +226,8 @@ function localtime(strDT){
 	if (strDT != ""){
 		var dt = new Date(strDT);
 		if (prefapitz == 'Pacific') { 
-			// roll the time forward 7 hours to UTC
-			dt.setUTCHours(dt.getUTCHours() + 7); 
+			// roll the time forward 8 hours to UTC
+			dt.setUTCHours(dt.getUTCHours() + 8); 
 		}
 	} else { // Just use local time
 		var dt = new Date;
