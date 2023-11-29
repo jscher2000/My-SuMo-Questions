@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>SUMO Questions Advanced Search - U.S. English (Beta)</title>
+<style type="text/css">
+@media screen {
+	html {margin: 0; padding:0; height: 100vh;}
+	body {font-family:sans-serif; font-size:16px; margin:0 8px;}
+	#searchform {width: 75vw; min-width: 650px; position: relative;}
+	.indent {margin-left: 65px;}
+	/* Color scheme */
+	@media (prefers-color-scheme: light) {
+		html, body {
+			color: #000;
+			background-color: #f6f9fc;
+		}
+	}
+	@media (prefers-color-scheme: dark) {
+		html, body {
+			color: #f4f4f4;
+			background-color: #333;
+		}
+		input {filter: invert(1);}
+		a:link {color: #8ff;}
+		a:visited {color: #c8c;}
+	}
+}
+</style>
+</head>
+<body>
+<h1>SUMO Questions Advanced Search - U.S. English (Beta)</h1>
+<noscript><p>JavaScript is required for this page!</p></noscript>
+<div id="searchdiv">
+	<form id="searchform" action="https://support.mozilla.org/en-US/search" method="GET" target="_blank" onsubmit="doSearch(); return false;">
+		<p class="indent"><span style="position: absolute; left: 0; top: 2px;">Query*: </span><input type="text" name="q" style="width: 90%" autofocus> <input type="submit" name="subbtn" value="Send it!"></p>
+		
+		<p class="indent"><em>Search field:</em> 
+		<label><input type="radio" name="field" value="any" checked> Any</label> 
+		<label><input type="radio" name="field" value="content"> Questions and Answers</label> 
+		<label><input type="radio" name="field" value="answer"> Answers only</label> 
+		<label><input type="radio" name="field" value="question"> Questions only</label> 
+		<label><input type="radio" name="field" value="title"> Thread titles only</label></p>
+		
+		<p class="indent"><em>Date range:</em> 
+		<label><input type="radio" name="datetype" value="updated" checked> Last updated</label> 
+		<label><input type="radio" name="datetype" value="created"> Created</label> 
+		&bull; <em>within the past</em> &bull; 
+		<input type="number" name="datenum" value="12" min="1" step="1" style="width:60px; text-align:center; padding-right:0;"> 
+		<label><input type="radio" name="dateunit" value="M" checked> months</label> 
+		<label><input type="radio" name="dateunit" value="w"> weeks</label> 
+		<label><input type="radio" name="dateunit" value="d"> days</label></p>
+		
+		<p class="indent"><em>Product:</em> 
+		<label><input type="radio" name="product" value="any" checked> Any</label> 
+		<label><input type="radio" name="product" value="firefox"> Firefox desktop</label> 
+		<label><input type="radio" name="product" value="firefox-enterprise"> Fx Enterprise</label> 
+		<label><input type="radio" name="product" value="thunderbird"> Thunderbird</label> 
+		<label><input type="radio" name="product" value="mobile"> Fx Android [mobile]</label> 
+		<label><input type="radio" name="product" value="firefox-preview"> Fx Android [preview]</label> 
+		<label><input type="radio" name="product" value="ios"> Fx iOS</label> 
+		<label><input type="radio" name="product" value="focus-firefox"> Fx Focus</label> 
+		<label><input type="radio" name="product" value="firefox-lockwise"> Lockwise</label> 
+		<label><input type="radio" name="product" value="firefox-private-network-vpn"> Mozilla VPN</label></p>
+		
+		<p class="indent"><em>Other Requirements:</em> 
+		<label><input type="checkbox" name="chkSolved"> Solved threads only</label> 
+		<label><input type="checkbox" name="chkNonLocked"> Exclude locked threads</label> 
+		<label><input type="checkbox" name="chkNonArchived"> Exclude archived threads</label></p>
+		
+		<p class="indent">* Document must contain all words, in any order, in the same field. Use quotation marks to keep a phrase together. If you specify Any field or both Q&A, you can use AND to combine fields (for example, one term can be in the question and another in an answer). Use NOT to exclude terms that identify an irrelevant thread. More info: <a href="https://kitsune.readthedocs.io/en/latest/advanced-search.html" target="_blank">https://kitsune.readthedocs.io/en/latest/advanced-search.html</a></em></p>
+		
+	</form>
+</div>
+
+<div id="copy">Version 2021.09.06. Copyright &copy; 2021 Jefferson "jscher2000" Scher. License/Source: <a href="https://www.mozilla.org/MPL/2.0/" rel="noopener" target="_blank">MPL 2.0</a></div>
+<script type="text/javascript">
+function doSearch(){
+	var frm = document.forms['searchform'];
+	// Check for query text
+	var txt = frm['q'].value.trim();
+	if (txt.length === 0) {
+		alert('Query text missing?');
+		window.setTimeout(function(){frm['q'].focus();}, 100);
+		return;
+	}
+	var url = frm.action + '?w=2'
+	// Assemble query
+	//   set up query field
+	var fld = frm['field'].value;
+	if (fld != 'any'){
+		txt = 'field:' + fld + ':(' + txt + ')';
+	}
+	//   add date range
+	txt += ' range:question_' + frm['datetype'].value + ':gte:now-' + parseInt(frm['datenum'].value) + frm['dateunit'].value + '/' + frm['dateunit'].value;
+	//   check for optional requirements
+	if (frm['chkSolved'].checked){
+		txt+= ' exact:question_has_solution:true';
+	}
+	if (frm['chkNonLocked'].checked){
+		txt+= ' exact:question_is_locked:false';
+	}
+	if (frm['chkNonArchived'].checked){
+		txt+= ' exact:question_is_archived:false';
+	}
+	//   check for product id
+	if (frm['product'].value == 'any'){
+		url += '&all_products=1';
+	} else {
+		url += '&product=' + frm['product'].value;
+	}
+	// Open in a new tab
+	url += '&q=' + encodeURIComponent(txt);
+	console.log(txt);
+	console.log(url);
+	window.open(url, '_blank');
+}
+</script>
+</body>
+<!--  <select name="product">
+			<option value="firefox" selected>Firefox</option>
+			<option value="firefox-enterprise">Firefox Enterprise</option>
+		</select> -->
+</html>

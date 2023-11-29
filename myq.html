@@ -24,6 +24,11 @@ h2, p {margin-top:0.5em; margin-bottom:0.5em;}
 .content {word-wrap: break-word;}
 .content pre {white-space:pre-wrap;}
 .content blockquote {background-color: #ddd;}
+.anslist li[spam="hide"] {background-color: #888; max-height: 1.5em; overflow-y: hidden; position: relative;}
+.anslist li[spam="show"] {background-color: unset; max-height: unset; overflow-y: visible; position: relative;}
+.spamtog {position: absolute; top: 0; right: 0;}
+.anslist li[spam="hide"] .spamtog > .hide {display: none;}
+.anslist li[spam="show"] .spamtog > .show {display: none;}
 .lastans a:link {color:#f00; font-weight:bold;}
 .lastans a:visited {color:#aaa; font-weight:normal;}
 .solved {background-color:#eee;}
@@ -38,7 +43,7 @@ h2, p {margin-top:0.5em; margin-bottom:0.5em;}
 .solut.helpful .anslink::after {content: "[SOLUTION] ❤️"; margin-left: 3px;}
 .ansavatar {float:left; margin:0 6px 2px 0; max-height:48px; max-width:48px;}
 .solut {background-color:#efe;}
-#answertop {position:fixed; bottom:4px; right:30px; font-size:36px;}
+#answertop {position:fixed; bottom:-8px; right:30px; font-size:36px;}
 #answertop button {height:2em; background-color:#fff; border:1px solid #aaa; border-radius:4px; margin-left:1px}
 #copy {position:fixed; bottom:1px; font-size:11px;}
 #updtspan {float:right; font-size:16px;}
@@ -57,9 +62,9 @@ h2, p {margin-top:0.5em; margin-bottom:0.5em;}
 <div id="answers"><p>Click a Question to display Answers here (Ctrl+click or Shift+click to load the question on SuMo)</p><p id="answertop"><button onclick="document.getElementById('answers').scrollTop = 0; this.blur();" title="Top of Thread">🔝</button><button onclick="window.print(); this.blur();" title="Print Thread" style="filter:grayscale(1);">🖨️</button></p></div>
 <div style="clear:both"></div>
 <noscript><p>JavaScript is required for this page!</p></noscript>
-<div id="copy">Version 2019.11.07. Copyright &copy; 2019 Jefferson "jscher2000" Scher. License/Source: <a href="https://www.mozilla.org/MPL/2.0/" rel="noopener" target="_blank">MPL 2.0</a>/<a href="https://github.com/jscher2000/My-SuMo-Questions" rel="noopener" target="_blank">Github</a> &bull; Settings: <a href="pref.html">Preferences page</a></div>
+<div id="copy">Version 2023.11.29. Copyright &copy; 2023 Jefferson "jscher2000" Scher. License/Source: <a href="https://www.mozilla.org/MPL/2.0/" rel="noopener" target="_blank">MPL 2.0</a>/<a href="https://github.com/jscher2000/My-SuMo-Questions" rel="noopener" target="_blank">Github</a> &bull; Settings: <a href="pref.html">Preferences page</a></div>
 <script type="text/javascript">
-var lso, sumouser = "", pages = 3, prefmins = 3, getprod = "", locale = "en-US", apilocale = "N", prefapitz = 'Pacific', prefupdttz = 'Pacific';
+var lso, sumouser = "", pages = 3, prefmins = 3, getprod = "", locale = "en-US", apilocale = "N", prefapitz = 'UTC', prefupdttz = 'UTC';
 // Set up the form with any saved data or apply defaults
 lso = window.localStorage;
 if (lso){
@@ -107,6 +112,8 @@ function showQ(apiObj){
 	prods['firefox-reality'] = "F/R";
 	prods['firefox-preview'] = "FPr";
 	prods['firefox-lockwise'] = "Lw";
+	prods['firefox-private-network'] = 'FPN';
+	prods['firefox-private-network-vpn'] = 'VPN';
 	for (var i=0; i<questions.length; i++){
 		var qid = questions[i].id;
 		var qlink = 'https://support.mozilla.org/'+locale+'questions/'+qid;
@@ -188,6 +195,7 @@ function getQ(pg, max, updtonly){
 		var lastupdt = document.getElementById("questions").getAttribute('lastupdt');
 		if (prefupdttz == 'Pacific' && prefapitz == 'UTC') { 
 			// TEMPORARY HACK AROUND: roll the lastupdt time back 8 hours to Pacific
+			// 7 hours starting 3/14/2021 // 8 hours starting 11/07/2021 // 7 hours starting 3/13/2022 // 8 hours starting 11/25/2022
 			var dt = new Date(lastupdt);
 			dt.setUTCHours(dt.getUTCHours() - 8);
 			lastupdt = dt.toISOString().slice(0, 19).replace('T', ' ');
@@ -227,6 +235,7 @@ function localtime(strDT){
 		var dt = new Date(strDT);
 		if (prefapitz == 'Pacific') { 
 			// roll the time forward 8 hours to UTC
+			// 7 hours starting 3/14/2021 // 8 hours starting 11/07/2021 // 7 hours starting 3/13/2022 // 8 hours starting 11/25/2022
 			dt.setUTCHours(dt.getUTCHours() + 8); 
 		}
 	} else { // Just use local time
@@ -288,7 +297,7 @@ function goPreview(quest,next){
 		document.getElementById("answers").appendChild(divnew);
 	}
 	if (next) var url=next;
-	else var url = 'https://support.mozilla.org/api/2/answer/?format=json&question='+quest+'&is_spam=False&ordering=id';
+	else var url = 'https://support.mozilla.org/api/2/answer/?format=json&question='+quest+'&ordering=id';
 	var request = new XMLHttpRequest();
 	request.onreadystatechange = function() {
 		if (request.readyState==4) {
@@ -367,9 +376,28 @@ function showA(apiObj){
 		else ansli.classList.remove("solut");
 		if (answers[k].num_helpful_votes - answers[k].num_unhelpful_votes > 0) ansli.classList.add("helpful");
 		else ansli.classList.remove("helpful");
+		// Moderated as spam -or- queued for moderation due to link 2020.06.26
+		if (answers[k].is_spam == true){
+			ansli.setAttribute('spam', 'hide');
+			if (!ansli.querySelector('.spamtog')) ansli.appendChild(document.importNode(document.getElementById('spambtn').content, true));
+			ansli.querySelector('a').removeAttribute('href');
+		} else {
+			if (ansli.hasAttribute('spam')){
+				ansli.removeAttribute('spam');
+				ansli.querySelector('.spamtog').remove();
+				ansli.querySelector('a').setAttribute('href', qlink + threadpage + '#answer-' + ansid);
+			}
+		}
 	}
 	list.lastChild.scrollIntoView({block:"start",behavior:"smooth"});
 }
+function toggleSpam(el){
+	var ans = el.closest('li');
+	if (ans.getAttribute('spam') == 'hide') ans.setAttribute('spam', 'show');
+	else ans.setAttribute('spam', 'hide');
+	el.blur();
+}
 </script>
+<template id="spambtn"><button class="spamtog" onclick="toggleSpam(this)"><span class="show">▼ Show Reply</span><span class="hide">▲ Hide Reply</span></button></template>
 </body>
 </html>
